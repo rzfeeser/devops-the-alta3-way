@@ -8,5 +8,5 @@ sudo cp /home/student/git/devops-the-alta3-way/labs/base-nginx.conf /etc/nginx/n
 sudo nginx -t
 
 sudo systemctl restart nginx.service
-
+echo $?
 echo "Completed Setup"
