@@ -1,4 +1,6 @@
-rn="\033[32m"
+#!/bin/bash
+
+grn="\033[32m"
 wht="\033[0m"
 
 set -eou pipefail
@@ -6,7 +8,7 @@ set -eou pipefail
 # namespace
 printf "${grn}Setting up the network namespaces${wht}\n"
 sudo ip netns add ohost
-sudo ip netns add phost
+sudo ip netns add phost    
 sudo ip netns add whost
 sudo ip netns add yhost
 sudo ip netns add prouter
@@ -219,10 +221,10 @@ ip -c l
 #Static Routes
 printf "${grn}Setting static routes${wht}\n"
 # Configure routes on the core router
-sudo ip netns exec crouter ip route add 10.1.1.0/30 via 10.1.5.2
-sudo ip netns exec crouter ip route add 10.1.2.4/30 via 10.1.5.6
-sudo ip netns exec crouter ip route add 10.1.3.8/30 via 10.1.5.10
-sudo ip netns exec crouter ip route add 10.1.4.12/30 via 10.1.5.14
+sudo ip netns exec crouter ip route add 10.1.1.0/24 via 10.1.5.2
+sudo ip netns exec crouter ip route add 10.1.2.0/24 via 10.1.5.6
+sudo ip netns exec crouter ip route add 10.1.3.0/24 via 10.1.5.10
+sudo ip netns exec crouter ip route add 10.1.4.0/24 via 10.1.5.14
 
 #Configure default routes on the hosts
 sudo ip netns exec phost ip route add default via 10.1.1.1
@@ -239,11 +241,13 @@ sudo ip netns exec orouter ip route add default via 10.1.5.13
 #DHCP
 printf "${grn}setting dhcp${wht}\n"
 sudo apt install dnsmasq -y
-sudo ip netns exec prouter dnsmasq --interface=prout2phost --dhcp-range=10.1.1.50,10.1.1.149,255.255.255.0
-sudo ip netns add phost2-ns
+sudo ip netns exec prouter dnsmasq --interface=prout2pbrg --dhcp-range=10.1.1.50,10.1.1.149,255.255.255.0
+sudo ip netns add phost2-ns  
 sudo ip link add phost22pbrg type veth peer name pbrg2phost2
 sudo ip netns exec phost2-ns ip link set dev lo up
 sudo ip link set phost22pbrg netns phost2-ns  
 sudo ip link set dev pbrg2phost2 master pbridge  
-sudo ip netns exec phost2-ns dhclient phost22pbrg
-sudo ip netns exec phost2-ns ip -c addr
+sudo ip netns exec phost2-ns  ip link set dev phost22pbrg up
+sudo ip netns exec phost2-ns dhclient phost22pbrg  
+printf "${grn}Here is your DHCP assigned IP address${wht}\n\n"
+sudo ip netns exec phost2-ns ip -c addr | grep 10.1
