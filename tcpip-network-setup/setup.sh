@@ -226,6 +226,7 @@ sudo ip netns exec crouter ip route add 10.1.1.0/24 via 10.1.5.2
 sudo ip netns exec crouter ip route add 10.1.2.0/24 via 10.1.5.6
 sudo ip netns exec crouter ip route add 10.1.3.0/24 via 10.1.5.10
 sudo ip netns exec crouter ip route add 10.1.4.0/24 via 10.1.5.14
+sudo ip netns exec crouter ip route add default via 10.1.5.18
 
 #Configure default routes on the hosts
 sudo ip netns exec phost ip route add default via 10.1.1.1
@@ -252,3 +253,12 @@ sudo ip netns exec phost2-ns  ip link set dev phost22pbrg up
 sudo ip netns exec phost2-ns dhclient phost22pbrg  
 printf "${grn}Here is your DHCP assigned IP address${wht}\n\n"
 sudo ip netns exec phost2-ns ip -c addr | grep 10.1
+
+# NAT
+printf "${grn}Enable the NAT function${wht}\n"
+
+sudo iptables -t nat -F
+sudo iptables -t nat    -A POSTROUTING -s 10.1.0.0/16 -o ens3 -j MASQUERADE
+sudo iptables -t filter -A FORWARD -i ens3 -o nat2crout -j ACCEPT
+sudo iptables -t filter -A FORWARD -o ens3 -i nat2crout -j ACCEPT
+sudo ip route add 10.1.0.0/16 via 10.1.5.17
