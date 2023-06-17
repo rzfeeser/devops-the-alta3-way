@@ -262,3 +262,6 @@ sudo iptables -t nat    -A POSTROUTING -s 10.1.0.0/16 -o ens3 -j MASQUERADE
 sudo iptables -t filter -A FORWARD -i ens3 -o nat2crout -j ACCEPT
 sudo iptables -t filter -A FORWARD -o ens3 -i nat2crout -j ACCEPT
 sudo ip route add 10.1.0.0/16 via 10.1.5.17
+
+printf "${grn}Testing IP connectivity including NAT${wht}\n"
+fping 10.0.0.1 10.1.1.1 10.1.1.21 10.1.2.1 10.1.2.21 10.1.3.1 10.1.3.21 10.1.4.1 10.1.4.21 8.8.8.8
