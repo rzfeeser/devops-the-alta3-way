@@ -109,6 +109,7 @@ sudo ip link set crout2nat netns crouter
 
 # IP Forwarding
 printf "${grn}Setting IP Forwarding${wht}\n"
+sudo sysctl net.bridge.bridge-nf-call-iptables=0
 echo 'net.ipv4.ip_forward = 1
 net.ipv6.conf.default.forwarding = 1
 net.ipv6.conf.all.forwarding = 1' | sudo tee /etc/sysctl.d/10-ip-forwarding.conf
