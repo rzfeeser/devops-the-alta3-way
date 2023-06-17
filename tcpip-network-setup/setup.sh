@@ -1,16 +1,12 @@
-#!/bin/bash
-
-grn="\033[32m"
+rn="\033[32m"
 wht="\033[0m"
-
-printf "${grn}Hello World${wht}\n"
 
 set -eou pipefail
 
 # namespace
-echo "Setting up the network namespaces"
+printf "${grn}Setting up the network namespaces${wht}\n"
 sudo ip netns add ohost
-sudo ip netns add phost    
+sudo ip netns add phost
 sudo ip netns add whost
 sudo ip netns add yhost
 sudo ip netns add prouter
@@ -18,9 +14,10 @@ sudo ip netns add yrouter
 sudo ip netns add wrouter
 sudo ip netns add orouter
 sudo ip netns add crouter
+sudo ip netns
 
 # ethernet bridges
-echo "Setting Ethernet Bridges"
+printf "${grn}Setting Ethernet Bridges${wht}\n"
 sudo ip link add name pbridge type bridge
 sudo ip link add name obridge type bridge
 sudo ip link add name ybridge type bridge
@@ -30,24 +27,86 @@ sudo ip link set dev obridge up
 sudo ip link set dev ybridge up
 sudo ip link set dev wbridge up
 brctl show
-ip l -c
 
 # Veths
-echo "Setting Veths"
-sudo ip netns exec phost ip link | grep -A 2 phost
-sudo ip netns exec yhost ip link | grep -A 2 yhost
-sudo ip netns exec whost ip link | grep -A 2 whost
-sudo ip netns exec ohost ip link | grep -A 2 ohost
-sudo ip netns exec crouter ip link | grep -A 5 router
-sudo ip netns exec prouter ip link | grep -A 2 prouter
-sudo ip netns exec yrouter ip link | grep -A 2 yrouter
-sudo ip netns exec wrouter ip link | grep -A 2 wrouter
-sudo ip netns exec orouter ip link | grep -A 2 orouter
-ip l -c
+printf "${grn}Install VETHs${wht}\n"
+# Connects phost to the pbridge (1)
+sudo ip link add phost2pbrg type veth peer name pbrg2phost
+sudo ip link set phost2pbrg netns phost
+sudo ip link set dev pbrg2phost master pbridge
+sudo ip link set dev pbrg2phost up
 
+# Connects prouter to the pbridge (2)
+sudo ip link add prout2pbrg type veth peer name pbrg2prout
+sudo ip link set prout2pbrg netns prouter
+sudo ip link set dev pbrg2prout master pbridge
+sudo ip link set dev pbrg2prout up
+
+# Connects yhost to the ybridge (3)
+sudo ip link add yhost2ybrg type veth peer name ybrg2yhost
+sudo ip link set yhost2ybrg netns yhost
+sudo ip link set dev ybrg2yhost master ybridge
+sudo ip link set dev ybrg2yhost up
+
+# Connects yrouter to the ybridge (4)
+sudo ip link add yrout2ybrg type veth peer name ybrg2yrout
+sudo ip link set yrout2ybrg netns yrouter
+sudo ip link set dev ybrg2yrout master ybridge
+sudo ip link set dev ybrg2yrout up
+
+# Connects whost to the wbridge (5)
+sudo ip link add whost2wbrg type veth peer name wbrg2whost
+sudo ip link set whost2wbrg netns whost
+sudo ip link set dev wbrg2whost master wbridge
+sudo ip link set dev wbrg2whost up
+
+# Connects wrouter to the wbridge (6)
+sudo ip link add wrout2wbrg type veth peer name wbrg2wrout
+sudo ip link set wrout2wbrg netns wrouter
+sudo ip link set dev wbrg2wrout master wbridge
+sudo ip link set dev wbrg2wrout up
+
+# Connects ohost to the obridge (7)
+sudo ip link add ohost2obrg type veth peer name obrg2ohost
+sudo ip link set ohost2obrg netns ohost
+sudo ip link set dev obrg2ohost master obridge
+sudo ip link set dev obrg2ohost up
+
+# Connects orouter to the obridge (8)
+sudo ip link add orout2obrg type veth peer name obrg2orout
+sudo ip link set orout2obrg netns orouter
+sudo ip link set dev obrg2orout master obridge
+sudo ip link set dev obrg2orout up
+
+# Connects prouter to crouter (9)
+sudo ip link add crout2prout type veth peer name prout2crout
+sudo ip link set crout2prout netns crouter
+sudo ip link set prout2crout netns prouter
+
+# Connects yrouter to crouter (10)
+sudo ip link add crout2yrout type veth peer name yrout2crout
+sudo ip link set crout2yrout netns crouter
+sudo ip link set yrout2crout netns yrouter
+
+# Connects wrouter to crouter (11)
+sudo ip link add crout2wrout type veth peer name wrout2crout
+sudo ip link set crout2wrout netns crouter
+sudo ip link set wrout2crout netns wrouter
+
+# Connects orouter to crouter (12)
+sudo ip link add crout2orout type veth peer name orout2crout
+sudo ip link set crout2orout netns crouter
+sudo ip link set orout2crout netns orouter
+
+# Connects crouter to nat
+# Connects nat to crouter (13)
+sudo ip link add crout2nat type veth peer name nat2crout
+sudo ip link set crout2nat netns crouter
+
+#Leave the other end of the veth DANGLE in the root namespace.
 
 # IP Forwarding
-echo "Setting IP Forwarding"
+printf "${grn}Setting IP Forwarding${wht}\n"
 echo 'net.ipv4.ip_forward = 1
 net.ipv6.conf.default.forwarding = 1
 net.ipv6.conf.all.forwarding = 1' | sudo tee /etc/sysctl.d/10-ip-forwarding.conf
@@ -59,7 +118,7 @@ sudo ip netns exec orouter sysctl -p /etc/sysctl.d/10-ip-forwarding.conf
 sudo ip netns exec crouter sysctl -p /etc/sysctl.d/10-ip-forwarding.conf
 
 # Assign IP Addresses
-echo "Assigning IP addresses"
+printf "${grn}Assigning IP addresses${wht}\n"
 # phost LAN link
 sudo ip netns exec phost ip addr add 10.1.1.21/24 dev phost2pbrg
 sudo ip netns exec phost ip link set dev phost2pbrg up
@@ -140,14 +199,30 @@ sudo ip netns exec crouter ip addr add 10.1.5.13/30 dev crout2orout
 sudo ip netns exec crouter ip link set dev crout2orout up
 sudo ip netns exec crouter ip link set dev lo up
 
+# Configure NAT link
+sudo ip netns exec crouter ip addr add 10.1.5.17/30 dev crout2nat
+sudo ip netns exec crouter ip link set dev crout2nat up
+sudo ip addr add 10.1.5.18/30 dev nat2crout
+
+printf "${grn}Verify Veths${wht}\n"
+sudo ip netns exec phost ip -c link | grep -A 2 phost
+sudo ip netns exec yhost ip -c link | grep -A 2 yhost
+sudo ip netns exec whost ip -c link | grep -A 2 whost
+sudo ip netns exec ohost ip -c link | grep -A 2 ohost
+sudo ip netns exec crouter ip -c link | grep -A 5 rout
+sudo ip netns exec prouter ip -c link | grep -A 2 prout
+sudo ip netns exec yrouter ip -c link | grep -A 2 yrout
+sudo ip netns exec wrouter ip -c link | grep -A 2 wrout
+sudo ip netns exec orouter ip -c link | grep -A 2 orout
+ip -c l
+
 #Static Routes
-echo "Setting static routes"
+printf "${grn}Setting static routes${wht}\n"
 # Configure routes on the core router
-sudo ip netns exec crouter ip route add 10.1.1.0/24 via 10.1.5.2
-sudo ip netns exec crouter ip route add 10.1.2.0/24 via 10.1.5.6
-sudo ip netns exec crouter ip route add 10.1.3.0/24 via 10.1.5.10
-sudo ip netns exec crouter ip route add 10.1.4.0/24 via 10.1.5.14
-sudo ip netns exec crouter ip route add default via 10.1.5.18
+sudo ip netns exec crouter ip route add 10.1.1.0/30 via 10.1.5.2
+sudo ip netns exec crouter ip route add 10.1.2.4/30 via 10.1.5.6
+sudo ip netns exec crouter ip route add 10.1.3.8/30 via 10.1.5.10
+sudo ip netns exec crouter ip route add 10.1.4.12/30 via 10.1.5.14
 
 #Configure default routes on the hosts
 sudo ip netns exec phost ip route add default via 10.1.1.1
@@ -162,10 +237,13 @@ sudo ip netns exec wrouter ip route add default via 10.1.5.9
 sudo ip netns exec orouter ip route add default via 10.1.5.13
 
 #DHCP
-echo "setting dhcp"
-sudo ip netns add phost2-ns  
-sudo ip link add phost2A type veth peer name phost2Z  
-sudo ip link set phost2A netns phost2-ns  
-sudo ip link set dev phost2Z master pbridge  
-sudo ip netns exec phost2-ns dhclient phost2A  
+printf "${grn}setting dhcp${wht}\n"
+sudo apt install dnsmasq -y
+sudo ip netns exec prouter dnsmasq --interface=prout2phost --dhcp-range=10.1.1.50,10.1.1.149,255.255.255.0
+sudo ip netns add phost2-ns
+sudo ip link add phost22pbrg type veth peer name pbrg2phost2
+sudo ip netns exec phost2-ns ip link set dev lo up
+sudo ip link set phost22pbrg netns phost2-ns  
+sudo ip link set dev pbrg2phost2 master pbridge  
+sudo ip netns exec phost2-ns dhclient phost22pbrg
 sudo ip netns exec phost2-ns ip -c addr
