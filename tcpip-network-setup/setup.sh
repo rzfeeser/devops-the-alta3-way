@@ -241,18 +241,18 @@ sudo ip netns exec wrouter ip route add default via 10.1.5.9
 sudo ip netns exec orouter ip route add default via 10.1.5.13
 
 #DHCP
-printf "${grn}setting dhcp${wht}\n"
-sudo apt install dnsmasq -y
-sudo ip netns exec prouter dnsmasq --interface=prout2pbrg --dhcp-range=10.1.1.50,10.1.1.149,255.255.255.0
-sudo ip netns add phost2-ns  
-sudo ip link add phost22pbrg type veth peer name pbrg2phost2
-sudo ip netns exec phost2-ns ip link set dev lo up
-sudo ip link set phost22pbrg netns phost2-ns  
-sudo ip link set dev pbrg2phost2 master pbridge  
-sudo ip netns exec phost2-ns  ip link set dev phost22pbrg up
-sudo ip netns exec phost2-ns dhclient phost22pbrg  
-printf "${grn}Here is your DHCP assigned IP address${wht}\n\n"
-sudo ip netns exec phost2-ns ip -c addr | grep 10.1
+#printf "${grn}setting dhcp${wht}\n"
+#sudo apt install dnsmasq -y
+#sudo ip netns exec prouter dnsmasq --interface=prout2pbrg --dhcp-range=10.1.1.50,10.1.1.149,255.255.255.0
+#sudo ip netns add phost2-ns  
+#sudo ip link add phost22pbrg type veth peer name pbrg2phost2
+#sudo ip netns exec phost2-ns ip link set dev lo up
+#sudo ip link set phost22pbrg netns phost2-ns  
+#sudo ip link set dev pbrg2phost2 master pbridge  
+#sudo ip netns exec phost2-ns  ip link set dev phost22pbrg up
+#sudo ip netns exec phost2-ns dhclient phost22pbrg  
+#printf "${grn}Here is your DHCP assigned IP address${wht}\n\n"
+#sudo ip netns exec phost2-ns ip -c addr | grep 10.1
 
 # NAT
 printf "${grn}Enable the NAT function${wht}\n"
