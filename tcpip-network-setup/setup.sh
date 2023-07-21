@@ -202,6 +202,10 @@ sudo ip netns exec crouter ip addr add 10.1.5.13/30 dev crout2orout
 sudo ip netns exec crouter ip link set dev crout2orout up
 sudo ip netns exec crouter ip link set dev lo up
 
+# Work around to prrevent DHCP from assigning IPs to devices
+sudo ip addr add 192.168.90.3/24 dev pbrg2prout 
+sudo ip addr add 192.168.90.4/24 dev pbridge
+
 # Configure NAT link
 sudo ip netns exec crouter ip addr add 10.1.5.17/30 dev crout2nat
 sudo ip netns exec crouter ip link set dev crout2nat up
