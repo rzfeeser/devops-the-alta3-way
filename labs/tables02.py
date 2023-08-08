@@ -13,7 +13,7 @@ c = conn.cursor()
 c.execute('''SELECT products.name
              FROM products
              INNER JOIN companies ON products.company_id = companies.id
-             WHERE companies.name = 'XYZ Corp';''')
+             WHERE companies.name = 'XYZ Corp.';''')
 
 # Fetch the results of the query
 result = c.fetchone()
